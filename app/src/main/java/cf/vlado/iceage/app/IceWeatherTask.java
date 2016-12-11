@@ -1,14 +1,15 @@
 package cf.vlado.iceage.app;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.text.format.Time;
 import android.util.Log;
-import android.widget.ArrayAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -24,22 +25,21 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Vector;
 
+import cf.vlado.iceage.app.data.IceWeatherContract;
 import cf.vlado.iceage.app.data.IceWeatherContract.WeatherEntry;
 
 /**
  * Created by blado on 12/11/16.
  */
 
-public class IceWeatherTask extends AsyncTask<String, Void, String[]> {
+public class IceWeatherTask extends AsyncTask<String, Void, Void> {
 
     private final String LOG_TAG = IceWeatherTask.class.getSimpleName();
 
-    private ArrayAdapter<String> mForecastAdapter;
     private final Context mContext;
 
-    public IceWeatherTask(Context context, ArrayAdapter<String> forecastAdapter) {
+    public IceWeatherTask(Context context) {
         mContext = context;
-        mForecastAdapter = forecastAdapter;
     }
 
     private boolean DEBUG = true;
@@ -69,7 +69,33 @@ public class IceWeatherTask extends AsyncTask<String, Void, String[]> {
     }
 
     public long addLocation(String locationSetting, String cityName, double lat, double lon) {
-        return -1;
+        long locationId;
+        Cursor locationCursor = mContext.getContentResolver().query(
+                IceWeatherContract.LocationEntry.CONTENT_URI,
+                new String[]{IceWeatherContract.LocationEntry._ID},
+                IceWeatherContract.LocationEntry.COLUMN_LOCATION_SETTING + " = ?",
+                new String[]{locationSetting},
+                null);
+
+        if (locationCursor.moveToFirst()) {
+            int locationIdIndex = locationCursor.getColumnIndex(IceWeatherContract.LocationEntry._ID);
+            locationId = locationCursor.getLong(locationIdIndex);
+        } else {
+            ContentValues locationValues = new ContentValues();
+            locationValues.put(IceWeatherContract.LocationEntry.COLUMN_CITY_NAME, cityName);
+            locationValues.put(IceWeatherContract.LocationEntry.COLUMN_LOCATION_SETTING, locationSetting);
+            locationValues.put(IceWeatherContract.LocationEntry.COLUMN_COORD_LAT, lat);
+            locationValues.put(IceWeatherContract.LocationEntry.COLUMN_COORD_LONG, lon);
+            Uri insertedUri = mContext.getContentResolver().insert(
+                    IceWeatherContract.LocationEntry.CONTENT_URI,
+                    locationValues
+            );
+            locationId = ContentUris.parseId(insertedUri);
+        }
+
+        locationCursor.close();
+        // Wait, that worked?  Yes!
+        return locationId;
     }
 
     public String[] convertContentValuesToUXFormat(Vector<ContentValues> cvv) {
@@ -82,7 +108,7 @@ public class IceWeatherTask extends AsyncTask<String, Void, String[]> {
         return resultStrs;
     }
 
-    private String[] getWeatherDataFromJson(String forecastJsonStr, String locationSetting) throws JSONException {
+    private void getWeatherDataFromJson(String forecastJsonStr, String locationSetting) throws JSONException {
 
         // Location information
         final String OWM_CITY = "city";
@@ -179,37 +205,24 @@ public class IceWeatherTask extends AsyncTask<String, Void, String[]> {
                 // Student: call bulkInsert to add the weatherEntries to the database here
             }
 
-            String sortOrder = WeatherEntry.COLUMN_DATE + " ASC";
-            Uri weatherForLocationUri = WeatherEntry.buildWeatherLocationWithStartDate(locationSetting, System.currentTimeMillis());
+            int inserted = 0;
+            // add to database
+            if ( cVVector.size() > 0 ) {
+                ContentValues[] cvArray = new ContentValues[cVVector.size()];
+                cVVector.toArray(cvArray);
+                inserted = mContext.getContentResolver().bulkInsert(WeatherEntry.CONTENT_URI, cvArray);
+            }
 
-            // Students: Uncomment the next lines to display what what you stored in the bulkInsert
-
-//            Cursor cur = mContext.getContentResolver().query(weatherForLocationUri,
-//                    null, null, null, sortOrder);
-//
-//            cVVector = new Vector<ContentValues>(cur.getCount());
-//            if ( cur.moveToFirst() ) {
-//                do {
-//                    ContentValues cv = new ContentValues();
-//                    DatabaseUtils.cursorRowToContentValues(cur, cv);
-//                    cVVector.add(cv);
-//                } while (cur.moveToNext());
-//            }
-
-            Log.d(LOG_TAG, "FetchWeatherTask Complete. " + cVVector.size() + " Inserted");
-
-            String[] resultStrs = convertContentValuesToUXFormat(cVVector);
-            return resultStrs;
+            Log.d(LOG_TAG, "FetchWeatherTask Complete. " + inserted + " Inserted");
 
         } catch (JSONException e) {
             Log.e(LOG_TAG, e.getMessage(), e);
             e.printStackTrace();
         }
-        return null;
     }
 
     @Override
-    protected String[] doInBackground(String... params) {
+    protected Void doInBackground(String... params) {
 
         if (params.length == 0) {
             return null;
@@ -261,9 +274,14 @@ public class IceWeatherTask extends AsyncTask<String, Void, String[]> {
                 return null;
             }
             forecastJsonStr = buffer.toString();
+            getWeatherDataFromJson(forecastJsonStr, locationQuery);
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error ", e);
-            return null;
+            // If the code didn't successfully get the weather data, there's no point in attempting
+            // to parse it.
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, e.getMessage(), e);
+            e.printStackTrace();
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -276,23 +294,6 @@ public class IceWeatherTask extends AsyncTask<String, Void, String[]> {
                 }
             }
         }
-
-        try {
-            return getWeatherDataFromJson(forecastJsonStr, locationQuery);
-        } catch (JSONException e) {
-            Log.e(LOG_TAG, e.getMessage(), e);
-            e.printStackTrace();
-        }
         return null;
-    }
-
-    @Override
-    protected void onPostExecute(String[] result) {
-        if (result != null && mForecastAdapter != null) {
-            mForecastAdapter.clear();
-            for(String dayForecastStr : result) {
-                mForecastAdapter.add(dayForecastStr);
-            }
-        }
     }
 }

@@ -78,4 +78,6 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="ice_age_detail_txt">Ice Age</string>
     <string name="action_settings">Settings</string>
+    <string name="ice_main_action_settings">Settings</string>
+    <string name="ice_detail_action_settings">Settings</string>
 </resources>

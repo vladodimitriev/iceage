@@ -56,15 +56,8 @@ public class IceMainFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         if (id == R.id.ice_main_fragment_action_refresh) {
-//            FetchWeatherTask weatherTask = new FetchWeatherTask();
-//            weatherTask.execute("Prague");
-//            return true;
-
             updateWeather();
             return true;
         }
@@ -77,16 +70,8 @@ public class IceMainFragment extends Fragment {
         updateWeather();
     }
 
-    private void updateWeather() {
-        FetchWeatherTask weatherTask = new FetchWeatherTask();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String location = prefs.getString(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
-        weatherTask.execute(location);
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
         // Dummy data for the ListView.
         String[] data = {
                 "Mon 6/23 - Sunny - 31/17",
@@ -105,11 +90,16 @@ public class IceMainFragment extends Fragment {
                 weekForecast);
 
         View rootView = inflater.inflate(R.layout.fragment_ice_main, container, false);
-
-        // Get a reference to the ListView, and attach this adapter to it.
         ListView listView = (ListView) rootView.findViewById(R.id.listview_ice_main_fragment);
         listView.setAdapter(mForecastAdapter);
         return rootView;
+    }
+
+    private void updateWeather() {
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = prefs.getString(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
+        weatherTask.execute(location);
     }
 
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
@@ -267,7 +257,6 @@ public class IceMainFragment extends Fragment {
                 Log.v(LOG_TAG, "Forecast entry: " + s);
             }
             return resultStrs;
-
         }
 
         @Override

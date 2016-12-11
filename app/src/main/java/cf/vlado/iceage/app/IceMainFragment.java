@@ -1,8 +1,10 @@
 package cf.vlado.iceage.app;
 
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -59,11 +61,27 @@ public class IceMainFragment extends Fragment {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         if (id == R.id.ice_main_fragment_action_refresh) {
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("Prague");
+//            FetchWeatherTask weatherTask = new FetchWeatherTask();
+//            weatherTask.execute("Prague");
+//            return true;
+
+            updateWeather();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    private void updateWeather() {
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = prefs.getString(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
+        weatherTask.execute(location);
     }
 
     @Override
@@ -103,9 +121,17 @@ public class IceMainFragment extends Fragment {
             return shortenedDateFormat.format(time);
         }
 
-        private String formatHighLows(double high, double low) {
+        private String formatHighLows(double high, double low, String unitType) {
+            if (unitType.equals(getString(R.string.pref_units_imperial))) {
+                high = (high * 1.8) + 32;
+                low = (low * 1.8) + 32;
+            } else if (!unitType.equals(getString(R.string.pref_units_metric))) {
+                Log.d(LOG_TAG, "Unit type not found: " + unitType);
+            }
+
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
+
             String highLowStr = roundedHigh + "/" + roundedLow;
             return highLowStr;
         }
@@ -164,7 +190,6 @@ public class IceMainFragment extends Fragment {
                     return null;
                 }
                 forecastJsonStr = buffer.toString();
-
                 Log.v(LOG_TAG, "Forecast string: " + forecastJsonStr);
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Error ", e);
@@ -214,6 +239,8 @@ public class IceMainFragment extends Fragment {
             dayTime = new Time();
 
             String[] resultStrs = new String[numDays];
+            SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String unitType = sharedPrefs.getString(getString(R.string.pref_units_key), getString(R.string.pref_units_metric));
             for(int i = 0; i < weatherArray.length(); i++) {
                 String day;
                 String description;
@@ -232,7 +259,7 @@ public class IceMainFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
-                highAndLow = formatHighLows(high, low);
+                highAndLow = formatHighLows(high, low, unitType);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
             }
 

@@ -12,7 +12,7 @@ public class IceDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ice_detail);
         if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction().add(R.id.ice_detail_fragment_container, new IceDetailFragment()).commit();
+            getSupportFragmentManager().beginTransaction().add(R.id.ice_detail_container, new IceDetailFragment()).commit();
         }
     }
 

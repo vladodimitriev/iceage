@@ -3,4 +3,5 @@
     xmlns:tools="http://schemas.android.com/tools" tools:context=".IceMainActivity">
 
     <item android:id="@+id/ice_main_action_settings" android:title="@string/ice_main_action_settings" android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/ice_main_action_map" android:title="@string/ice_main_action_map" android:orderInCategory="100" app:showAsAction="never" />
 </menu>

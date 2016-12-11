@@ -1,3 +1,4 @@
-<fragment xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/fragment_ice_detail" android:name="cf.vlado.iceage.app.IceDetailFragment" tools:layout="@layout/fragment_ice_detail"
-    android:layout_width="match_parent" android:layout_height="match_parent" />
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:id="@+id/ice_detail_container"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    tools:context=".IceDetailActivity" tools:ignore="MergeRootFrame" />

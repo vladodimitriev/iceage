@@ -16,6 +16,7 @@ public class IceWeatherContract {
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
     public static final String PATH_WEATHER = "weather";
     public static final String PATH_LOCATION = "location";
+    public static final String DATE_FORMAT = "dd/MM/yyyy";
 
     public static long normalizeDate(long startDate) {
         Time time = new Time();
